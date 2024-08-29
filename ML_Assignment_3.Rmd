@@ -1,0 +1,111 @@
+---
+title: "MLAssignment-3"
+author: "divi"
+date: "29 August 2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+library(ISLR)
+data("Auto")
+```
+###1. In this problem, you will develop a model to predict whether a given car gets high or low gas mileage based on the Auto data set.
+
+
+####(a) Create a binary variable, mpg01, that contains a 1 if mpg contains a value above its median, and a 0 if mpg contains a value below its median. You can compute the median using the median() function. Note you may find it helpful to use the data.frame() function to create a single data set containing both mpg01 and the other Auto variables.
+
+```{r}
+median_mpg = median(Auto$mpg)
+Auto$mpg01 = ifelse(Auto$mpg > median_mpg, 1, 0)
+median_mpg
+```
+
+
+#### (b) Explore the data graphically in order to investigate the association between mpg01 and the other features. Which of the other features seem most likely to be useful in predicting mpg01? Scatterplots and boxplots may be useful tools to answer this question. Describe your findings. 
+```{r}
+
+pairs(Auto[, c("mpg01", "displacement", "horsepower", "weight", "acceleration")])
+
+
+boxplot(Auto$displacement ~ Auto$mpg01, main="Displacement vs mpg01")
+boxplot(Auto$horsepower ~ Auto$mpg01, main="Horsepower vs mpg01")
+boxplot(Auto$weight ~ Auto$mpg01, main="Weight vs mpg01")
+boxplot(Auto$acceleration ~ Auto$mpg01, main="Acceleration vs mpg01")
+
+```
+
+ 
+####(c)	 Split the data into a training set and a test set.
+
+```{r}
+set.seed(123) 
+train_indices <- sample(1:nrow(Auto), nrow(Auto) * 0.7)
+train_data <- Auto[train_indices, ]
+test_data <- Auto[-train_indices, ]
+
+```
+
+
+
+####(d)	Perform LDA on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained? 
+
+```{r}
+library(MASS)
+lda_model = lda(mpg01 ~ displacement + horsepower + weight + acceleration, data=train_data)
+lda_predictions = predict(lda_model, test_data)$class
+lda_test_error = mean(lda_predictions != test_data$mpg01)
+lda_test_error
+
+```
+
+
+####(e)	Perform QDA on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained?
+
+
+```{r}
+qda_model <- qda(mpg01 ~ displacement + horsepower + weight + acceleration, data=train_data)
+qda_predictions <- predict(qda_model, test_data)$class
+qda_test_error <- mean(qda_predictions != test_data$mpg01)
+qda_test_error
+
+```
+
+
+
+####(f)	Perform logistic regression on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained?
+
+
+
+```{r}
+logistic_model <- glm(mpg01 ~ displacement + horsepower + weight + acceleration, data=train_data, family=binomial)
+logistic_probs <- predict(logistic_model, test_data, type="response")
+logistic_predictions <- ifelse(logistic_probs > 0.5, 1, 0)
+logistic_test_error <- mean(logistic_predictions != test_data$mpg01)
+logistic_test_error
+
+```
+
+
+
+####(g)	Perform KNN on the training data, with several values of K, in order to predict mpg01. Use only the variables that seemed most associated with mpg01 in (b). What test errors do you obtain? Which value of K seems to perform the best on this data set?
+
+```{r}
+library(class)
+train_X <- train_data[, c("displacement", "horsepower", "weight", "acceleration")]
+test_X <- test_data[, c("displacement", "horsepower", "weight", "acceleration")]
+train_Y <- train_data$mpg01
+
+knn_test_errors <- c()
+for (k in 1:20) {
+    knn_predictions <- knn(train_X, test_X, train_Y, k=k)
+    knn_test_errors[k] <- mean(knn_predictions != test_data$mpg01)
+}
+knn_test_errors
+
+```
+
+
